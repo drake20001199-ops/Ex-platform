@@ -1,0 +1,30 @@
+---
+description: Enforce maximum 200 lines per source file
+globs: src/**/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Maximum File Length: 200 Lines
+
+Every source file MUST be 200 lines or fewer. No exceptions.
+
+## When a file approaches or exceeds 200 lines
+
+1. Extract sub-components into separate files
+2. Move helper functions to a `utils` or `lib` file
+3. Move types/interfaces to a dedicated `.types.ts` file
+4. Move constants to a dedicated `constants.ts` file
+5. Split large components into smaller, composed pieces
+
+## Example — splitting a large component
+
+```
+// ❌ BAD: one 350-line file
+src/components/TransactionDetail.tsx (350 lines)
+
+// ✅ GOOD: split into focused files
+src/components/transaction-detail/TransactionInfo.tsx (60 lines)
+src/components/transaction-detail/SettlementForm.tsx (80 lines)
+src/components/transaction-detail/StatusTimeline.tsx (50 lines)
+src/components/transaction-detail/index.tsx (40 lines)
+```

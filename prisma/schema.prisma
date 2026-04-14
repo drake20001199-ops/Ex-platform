@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum KycStatus {
+  NOT_STARTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  NEED_MORE_DOCS
+}
+
+enum DocumentType {
+  PASSPORT
+  ID_CARD
+  SELFIE
+  PROOF_OF_ADDRESS
+}
+
+enum DocumentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum CryptoType {
+  BTC
+  ETH
+}
+
+enum TransactionStatus {
+  CREATED
+  AWAITING_PAYMENT
+  PAYMENT_RECEIVED
+  CRYPTO_SENT
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  emailVerifiedAt    DateTime? @map("email_verified_at")
+  passwordHash       String    @map("password_hash")
+  firstName          String    @map("first_name")
+  lastName           String    @map("last_name")
+  phone              String
+  dateOfBirth        DateTime  @map("date_of_birth")
+  addressStreet      String    @map("address_street")
+  addressCity        String    @map("address_city")
+  addressState       String    @map("address_state")
+  addressPostcode    String    @map("address_postcode")
+  countryOfResidence String    @map("country_of_residence")
+  citizenship        String?
+  taxStatus          String?   @map("tax_status")
+  sourceOfFunds      String?   @map("source_of_funds")
+  purpose            String?
+  kycStatus          KycStatus @default(NOT_STARTED) @map("kyc_status")
+  kycProviderRef     String?   @map("kyc_provider_ref")
+  kycRejectionReason String?   @map("kyc_rejection_reason")
+  role               Role      @default(CUSTOMER)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  kycDocuments           KycDocument[]
+  transactions           Transaction[]
+  auditLogsPerformed     AuditLog[]          @relation("AuditActor")
+  activityEvents         ActivityEvent[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens    PasswordResetToken[]
+
+  @@map("users")
+}
+
+model KycDocument {
+  id           String         @id @default(uuid())
+  userId       String         @map("user_id")
+  documentType DocumentType   @map("document_type")
+  fileUrl      String         @map("file_url")
+  uploadedAt   DateTime       @default(now()) @map("uploaded_at")
+  status       DocumentStatus @default(PENDING)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("kyc_documents")
+}
+
+model Transaction {
+  id                String            @id @default(uuid())
+  userId            String            @map("user_id")
+  cryptoType        CryptoType        @map("crypto_type")
+  audAmount         Decimal           @map("aud_amount") @db.Decimal(18, 2)
+  cryptoAmount      Decimal?          @map("crypto_amount") @db.Decimal(28, 8)
+  exchangeRate      Decimal?          @map("exchange_rate") @db.Decimal(18, 2)
+  markupPercentage  Decimal?          @map("markup_percentage") @db.Decimal(5, 2)
+  finalCustomerRate Decimal?          @map("final_customer_rate") @db.Decimal(18, 2)
+  walletAddress     String            @map("wallet_address")
+  status            TransactionStatus @default(CREATED)
+  bsbSentAt         DateTime?         @map("bsb_sent_at")
+  blockchainTxHash  String?           @map("blockchain_tx_hash")
+  blockchainTxLink  String?           @map("blockchain_tx_link")
+  adminNotes        String?           @map("admin_notes")
+  cancelledReason   String?           @map("cancelled_reason")
+  cancelledAt       DateTime?         @map("cancelled_at")
+  idempotencyKey    String            @unique @map("idempotency_key")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  settledAt         DateTime?         @map("settled_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@map("transactions")
+}
+
+model AdminSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@map("admin_settings")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String   @map("actor_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ActivityEvent {
+  id          String   @id @default(uuid())
+  eventType   String   @map("event_type")
+  userId      String   @map("user_id")
+  entityId    String?  @map("entity_id")
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("activity_events")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model PriceCache {
+  id         String     @id @default(uuid())
+  cryptoType CryptoType @unique @map("crypto_type")
+  audRate    Decimal    @map("aud_rate") @db.Decimal(18, 2)
+  change24h  Decimal    @map("change_24h") @db.Decimal(8, 2)
+  fetchedAt  DateTime   @map("fetched_at")
+
+  @@map("price_cache")
+}
