@@ -8,13 +8,19 @@ import { Testimonials } from "@/components/landing/Testimonials";
 import { FAQ } from "@/components/landing/FAQ";
 import { Footer } from "@/components/landing/Footer";
 import { getPrices } from "@/lib/crypto-price";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function HomePage() {
-  const prices = await getPrices();
+  const [prices, user] = await Promise.all([
+    getPrices(),
+    getCurrentUser(),
+  ]);
 
   return (
     <main className="relative">
-      <Navbar />
+      <Navbar
+        user={user ? { firstName: user.firstName, role: user.role } : null}
+      />
       <HeroSection
         btcPrice={prices.btc.aud}
         ethPrice={prices.eth.aud}
