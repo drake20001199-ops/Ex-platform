@@ -86,7 +86,8 @@ export default function KYCPage() {
     }
   }
 
-  const allUploaded = allRequiredTypes.every((t) => uploaded[t]);
+  const requiredForSubmit = allRequiredTypes.filter((t) => t !== "SOURCE_OF_FUNDS");
+const allUploaded = requiredForSubmit.every((t) => uploaded[t]);
 
   async function handleSubmit() {
     setUploading("submit");

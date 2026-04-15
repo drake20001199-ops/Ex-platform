@@ -8,7 +8,17 @@ import crypto from "crypto";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const VALID_DOC_TYPES = ["PASSPORT", "ID_CARD", "SELFIE", "PROOF_OF_ADDRESS"];
+const VALID_DOC_TYPES = [
+  "PASSPORT",
+  "ID_CARD",
+  "ID_CARD_FRONT",
+  "ID_CARD_BACK",
+  "SELFIE",
+  "PROOF_OF_ADDRESS",
+  "SOURCE_OF_FUNDS",
+  "DRIVING_LICENSE_FRONT",
+  "DRIVING_LICENSE_BACK",
+];
 
 export async function POST(req: NextRequest) {
   try {
