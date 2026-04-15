@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { CookieConsent } from "@/components/shared/CookieConsent";
+import { Preloader } from "@/components/shared/Preloader";
 import "./globals.css";
 
 const inter = Inter({
@@ -22,7 +23,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} dark`}>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className="min-h-screen bg-background font-sans antialiased select-none">
+        <Preloader />
         {children}
         <Toaster />
         <CookieConsent />

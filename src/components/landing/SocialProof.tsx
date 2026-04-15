@@ -5,10 +5,10 @@ import { Shield, Users, ArrowLeftRight, Clock } from "lucide-react";
 import { AnimatedCounter } from "./AnimatedCounter";
 
 const stats = [
-  { icon: Users, value: "10,000+", label: "Australians served" },
-  { icon: ArrowLeftRight, value: "A$45M+", label: "Total volume traded" },
-  { icon: Clock, value: "<10 min", label: "Average verification" },
-  { icon: Shield, value: "100%", label: "Funds accounted for" },
+  { icon: Users,          value: "10,000+",  label: "Australians served" },
+  { icon: ArrowLeftRight, value: "$45M+",    label: "Total volume traded (AUD)" },
+  { icon: Clock,          value: "10 min",   label: "Average verification" },
+  { icon: Shield,         value: "100%",     label: "Funds accounted for" },
 ];
 
 const cardVariants = {
@@ -63,7 +63,7 @@ export function SocialProof() {
         >
           <AustracBadge />
           <span className="text-xs text-muted-foreground">
-            Trusted by customers in Sydney, Melbourne, Brisbane, Perth & across Australia
+            Trusted by customers in Sydney, Melbourne, Brisbane, Perth &amp; across Australia
           </span>
         </motion.div>
       </div>
