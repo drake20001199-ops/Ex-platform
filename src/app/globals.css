@@ -120,19 +120,29 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    /* Prevent text selection across the site */
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
   }
+
   body {
     @apply bg-background text-foreground;
   }
-button, [role="button"], a, label[for], select, input[type="checkbox"], input[type="radio"], input[type="file"] {
-    cursor: pointer;
-  }
+
   html {
     @apply font-sans;
+  }
+
+  /* Pointer cursor on all interactive elements */
+  button,
+  [role="button"],
+  a,
+  label[for],
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"] {
+    cursor: pointer;
   }
 
   /* Allow text input in form fields */
@@ -143,6 +153,7 @@ button, [role="button"], a, label[for], select, input[type="checkbox"], input[ty
     -webkit-user-select: text;
     -moz-user-select: text;
     user-select: text;
+    cursor: text;
   }
 
   /* Prevent image dragging */
