@@ -64,7 +64,6 @@ export default function KYCPage() {
 
   const selectedIdType = ID_TYPES.find((t) => t.value === idType)!;
 
-  // All required doc types for current selection
   const allRequiredTypes = [
     ...selectedIdType.files.map((f) => f.type),
     ...STATIC_DOCS.map((d) => d.type),
@@ -112,7 +111,7 @@ export default function KYCPage() {
       </div>
 
       {/* ── Step 1: Choose ID type ── */}
-      <Card className="border-white/10 bg-white/5">
+      <Card className="border-white/10 bg-white/5 overflow-visible">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-5 w-5 text-blue-400" />
@@ -120,7 +119,7 @@ export default function KYCPage() {
           </CardTitle>
           <CardDescription>Select the type of ID you would like to use for verification.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-visible">
           {/* Custom dropdown */}
           <div className="relative">
             <button
@@ -133,7 +132,7 @@ export default function KYCPage() {
             </button>
 
             {idDropdownOpen && (
-              <div className="absolute left-0 top-full z-10 mt-1 w-full overflow-hidden rounded-lg border border-white/10 bg-card shadow-xl">
+              <div className="absolute left-0 top-full z-50 mt-1 w-full overflow-hidden rounded-lg border border-white/10 bg-card shadow-xl">
                 {ID_TYPES.map((t) => (
                   <button
                     key={t.value}
@@ -141,7 +140,6 @@ export default function KYCPage() {
                     onClick={() => {
                       setIdType(t.value);
                       setIdDropdownOpen(false);
-                      // Clear previously uploaded ID files when switching type
                       setUploaded((prev) => {
                         const next = { ...prev };
                         ID_TYPES.forEach((it) => it.files.forEach((f) => delete next[f.type]));
@@ -169,7 +167,7 @@ export default function KYCPage() {
           key={file.type}
           docType={file.type}
           label={file.label}
-          description={`Upload a clear, unobstructed photo. Ensure all four corners are visible and the text is readable.`}
+          description="Upload a clear, unobstructed photo. Ensure all four corners are visible and the text is readable."
           uploading={uploading}
           uploaded={uploaded}
           onUpload={handleUpload}
