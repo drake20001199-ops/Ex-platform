@@ -45,6 +45,10 @@ export function verifyToken(token: string): TokenPayload | null {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// setAuthCookies — only call from Route Handlers or Server Actions
+// NEVER call from Server Components (causes runtime error)
+// ─────────────────────────────────────────────────────────────────────────────
 export async function setAuthCookies(userId: string, role: string) {
   const cookieStore = await cookies();
   const accessToken = generateAccessToken({ userId, role });
@@ -73,22 +77,39 @@ export async function clearAuthCookies() {
   cookieStore.delete("refresh_token");
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// getCurrentUser — safe to call from Server Components
+// Reads cookies but NEVER writes them (writing is only allowed in Route Handlers)
+// If access token expired but refresh token valid → returns user from refresh payload
+// The new access token will be issued next time they hit a Route Handler
+// ─────────────────────────────────────────────────────────────────────────────
 export async function getCurrentUser() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value;
+  const refreshToken = cookieStore.get("refresh_token")?.value;
 
-  let payload = accessToken ? verifyToken(accessToken) : null;
-
-  if (!payload) {
-    const refreshToken = cookieStore.get("refresh_token")?.value;
-    if (!refreshToken) return null;
-    payload = verifyToken(refreshToken);
-    if (!payload) return null;
-    await setAuthCookies(payload.userId, payload.role);
+  // Try access token first
+  if (accessToken) {
+    const payload = verifyToken(accessToken);
+    if (payload) {
+      return fetchUser(payload.userId);
+    }
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
+  // Access token expired — fall back to refresh token (read-only, no cookie write)
+  if (refreshToken) {
+    const payload = verifyToken(refreshToken);
+    if (payload) {
+      return fetchUser(payload.userId);
+    }
+  }
+
+  return null;
+}
+
+async function fetchUser(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
     select: {
       id: true,
       email: true,
@@ -99,8 +120,6 @@ export async function getCurrentUser() {
       emailVerifiedAt: true,
     },
   });
-
-  return user;
 }
 
 export async function requireAuth() {

@@ -3,8 +3,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TransactionActions } from "@/components/admin/TransactionActions";
 import { SettlementForm } from "@/components/admin/SettlementForm";
-import { ArrowLeft, ExternalLink, AlertTriangle } from "lucide-react";
-import Link from "next/link";
+import { BackButton } from "@/components/shared/BackButton";
+import { ExternalLink, AlertTriangle } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -33,9 +33,7 @@ export default async function AdminTransactionDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/transactions" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to Transactions
-      </Link>
+      <BackButton fallback="/admin/transactions" />
 
       <div className="flex items-center justify-between">
         <div>
@@ -52,57 +50,74 @@ export default async function AdminTransactionDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <TransactionActions transactionId={tx.id} status={tx.status} hasTxHash={!!tx.blockchainTxHash} />
+      <TransactionActions
+        transactionId={tx.id}
+        status={tx.status}
+        hasTxHash={!!tx.blockchainTxHash}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Customer info */}
+      <Card className="border-white/10 bg-white/5">
+        <CardHeader><CardTitle>Customer</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <Row label="Name" value={`${tx.user.firstName} ${tx.user.lastName}`} />
+          <Row label="Email" value={tx.user.email} />
+        </CardContent>
+      </Card>
+
+      {/* Order info */}
+      <Card className="border-white/10 bg-white/5">
+        <CardHeader><CardTitle>Order Information</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <Row label="Crypto Type" value={tx.cryptoType} />
+          <Row label="AUD Amount" value={formatAUD(audAmount)} />
+          <Row label="Wallet Address" value={tx.walletAddress} />
+          <Row label="Status" value={tx.status} />
+          <Row label="Created" value={formatShortDate(tx.createdAt)} />
+          {tx.bsbSentAt && <Row label="BSB Sent" value={formatShortDate(tx.bsbSentAt)} />}
+          {tx.settledAt && <Row label="Settled" value={formatShortDate(tx.settledAt)} />}
+        </CardContent>
+      </Card>
+
+      {/* Settlement */}
+      {(tx.status === "PAYMENT_RECEIVED" || cryptoAmount) && (
         <Card className="border-white/10 bg-white/5">
-          <CardHeader><CardTitle>Order Information</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Settlement Details</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <Row label="Customer" value={`${tx.user.firstName} ${tx.user.lastName}`} link={`/admin/users/${tx.user.id}`} />
-            <Row label="Email" value={tx.user.email} />
-            <Row label="Crypto" value={tx.cryptoType} />
-            <Row label="AUD Amount" value={formatAUD(audAmount)} />
             {exchangeRate && <Row label="Exchange Rate" value={formatAUD(exchangeRate)} />}
-            {cryptoAmount && <Row label="Crypto Amount" value={cryptoAmount} />}
             {finalCustomerRate && <Row label="Customer Rate" value={formatAUD(finalCustomerRate)} />}
-            <Row label="Wallet" value={tx.walletAddress} />
-            <Row label="Created" value={formatShortDate(tx.createdAt)} />
-            {tx.settledAt && <Row label="Settled" value={formatShortDate(tx.settledAt)} />}
+            {cryptoAmount && <Row label="Crypto Amount" value={`${cryptoAmount} ${tx.cryptoType}`} />}
             {tx.blockchainTxLink && (
-              <div className="flex justify-between border-b border-white/5 py-2">
-                <span className="text-muted-foreground">Blockchain</span>
-                <a href={tx.blockchainTxLink} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-400">
-                  View <ExternalLink className="h-3 w-3" />
+              <div className="flex items-center justify-between py-2">
+                <span className="text-muted-foreground">Blockchain TX</span>
+                <a href={tx.blockchainTxLink} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1 text-blue-400 hover:underline">
+                  View on Explorer <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
             )}
           </CardContent>
         </Card>
+      )}
 
-        {tx.status === "PAYMENT_RECEIVED" && (
-          <SettlementForm transactionId={tx.id} audAmount={audAmount} cryptoType={tx.cryptoType} defaultMarkup={3} />
-        )}
-      </div>
-
-      <Card className="border-white/10 bg-white/5">
-        <CardHeader><CardTitle>Admin Notes</CardTitle></CardHeader>
-        <CardContent>
-          <Textarea defaultValue={tx.adminNotes || ""} placeholder="Internal notes about this transaction..." rows={4} />
-        </CardContent>
-      </Card>
+      {/* Settlement form — shown when payment received */}
+      {tx.status === "PAYMENT_RECEIVED" && (
+        <SettlementForm
+          transactionId={tx.id}
+          audAmount={audAmount}
+          cryptoType={tx.cryptoType}
+          defaultMarkup={3}
+        />
+      )}
     </div>
   );
 }
 
-function Row({ label, value, link }: { label: string; value: string; link?: string }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between border-b border-white/5 py-2 last:border-0">
       <span className="text-muted-foreground">{label}</span>
-      {link ? (
-        <Link href={link} className="text-blue-400 hover:underline">{value}</Link>
-      ) : (
-        <span className="font-mono text-xs">{value}</span>
-      )}
+      <span>{value}</span>
     </div>
   );
 }

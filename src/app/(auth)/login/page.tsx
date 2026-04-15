@@ -26,7 +26,6 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "Login failed"); return; }
-      toast.success("Welcome back!");
       router.push(data.role === "ADMIN" ? "/admin" : "/dashboard");
       router.refresh();
     } catch {
@@ -39,8 +38,8 @@ export default function LoginPage() {
   return (
     <Card className="border-white/10 bg-white/5 backdrop-blur">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome Back</CardTitle>
-        <CardDescription>Sign in to your account</CardDescription>
+        <CardTitle className="text-2xl">Sign In</CardTitle>
+        <CardDescription>Enter your email and password to continue</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">

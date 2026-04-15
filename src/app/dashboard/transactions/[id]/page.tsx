@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { ExternalLink, Copy, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { BackButton } from "@/components/shared/BackButton";
+import { ExternalLink, Copy } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -24,9 +24,7 @@ export default async function TransactionDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <Link href="/dashboard/transactions" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to Transactions
-      </Link>
+      <BackButton fallback="/dashboard/transactions" />
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Transaction Details</h1>
@@ -65,7 +63,12 @@ function Row({ label, value, copyable }: { label: string; value: string; copyabl
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-2 font-mono text-xs">
         {value}
-        {copyable && <Copy className="h-3 w-3 cursor-pointer text-muted-foreground hover:text-foreground" />}
+        {copyable && (
+          <Copy
+            className="h-3 w-3 cursor-pointer text-muted-foreground hover:text-foreground"
+            onClick={() => navigator.clipboard.writeText(value)}
+          />
+        )}
       </span>
     </div>
   );
