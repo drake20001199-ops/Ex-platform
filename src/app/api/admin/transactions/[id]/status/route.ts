@@ -1,3 +1,12 @@
+// ============================================================
+// FIX M3: src/app/api/admin/transactions/[id]/status/route.ts
+// PROBLEM: settledAt logic — `updateData.settledAt = updateData.settledAt || new Date()`
+//          always sets new Date() because updateData.settledAt is undefined.
+//          settledAt should only be set by the settle endpoint, not by COMPLETED status.
+// FIX: Remove settledAt from COMPLETED transition (settle route handles it).
+//      Also add email verify check on transactions POST.
+// ============================================================
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
@@ -36,7 +45,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Status is required" }, { status: 400 });
   }
 
-  // Validate reason length
   if (reason && reason.length > 1000) {
     return NextResponse.json({ error: "Reason too long (max 1000 characters)" }, { status: 400 });
   }
@@ -44,7 +52,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const tx = await prisma.transaction.findUnique({ where: { id } });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // COMPLETED and CANCELLED are terminal — cannot transition from them
   const allowed = VALID_TRANSITIONS[tx.status] || [];
   if (!allowed.includes(status)) {
     return NextResponse.json({ error: `Cannot transition from ${tx.status} to ${status}` }, { status: 400 });
@@ -54,16 +61,22 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "TX hash required before marking crypto sent" }, { status: 400 });
   }
 
+  // FIX: COMPLETED requires that settlement was already done
+  if (status === "COMPLETED" && !tx.settledAt) {
+    return NextResponse.json(
+      { error: "Cannot complete — settlement details not yet entered. Use the settle form first." },
+      { status: 400 }
+    );
+  }
+
   const updateData: Record<string, unknown> = { status };
   if (status === "AWAITING_PAYMENT") updateData.bsbSentAt = new Date();
-  if (status === "COMPLETED") updateData.settledAt = updateData.settledAt || new Date();
+  // FIX: Removed settledAt from here — it's set by the settle endpoint
   if (status === "CANCELLED") {
     updateData.cancelledAt = new Date();
     updateData.cancelledReason = (reason || "Admin cancelled").slice(0, 1000);
   }
 
-  // Atomic update: only update if current status matches what we read
-  // Prevents race condition where two admins update simultaneously
   const result = await prisma.transaction.updateMany({
     where: { id, status: tx.status },
     data: updateData,
@@ -103,7 +116,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         txLink: tx.blockchainTxLink || undefined,
       });
     } catch {
-      // Email failure should not block status update — already committed
+      // Email failure should not block status update
     }
   }
 

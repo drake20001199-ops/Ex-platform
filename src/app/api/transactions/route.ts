@@ -1,10 +1,18 @@
+// ============================================================
+// FIX M4: src/app/api/transactions/route.ts
+// PROBLEM: Only checks kycStatus but not emailVerifiedAt.
+//          A user with approved KYC but unverified email could create orders.
+// FIX: Add emailVerifiedAt check before allowing transaction creation.
+//      Also migrate to rateLimitAsync.
+// ============================================================
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { createTransactionSchema, validateWalletAddress } from "@/lib/validations";
 import { createActivityEvent } from "@/lib/audit";
 import { getSetting } from "@/lib/settings";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitAsync } from "@/lib/rate-limit";
 
 export async function GET() {
   try {
@@ -37,9 +45,15 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { allowed } = rateLimit(`tx:${user.id}`, 3, 60 * 1000); // 3 per minute
+    // FIX: Rate limit with Redis
+    const { allowed } = await rateLimitAsync(`tx:${user.id}`, 3, 60 * 1000);
     if (!allowed) {
       return NextResponse.json({ error: "Too many orders. Please wait before creating another." }, { status: 429 });
+    }
+
+    // FIX: Check email verification
+    if (!user.emailVerifiedAt) {
+      return NextResponse.json({ error: "Please verify your email before placing orders" }, { status: 403 });
     }
 
     if (user.kycStatus !== "APPROVED") {
@@ -63,20 +77,19 @@ export async function POST(req: NextRequest) {
     if (audAmount < minAud) return NextResponse.json({ error: `Minimum amount is AUD ${minAud}` }, { status: 400 });
     if (audAmount > maxAud) return NextResponse.json({ error: `Maximum amount is AUD ${maxAud}` }, { status: 400 });
 
-    const enabled = await getSetting(cryptoType === "BTC" ? "btc_trading_enabled" : "eth_trading_enabled");
+    const enabled = await getSetting(cryptoType === "BTC" ? "btc_enabled" : "eth_enabled");
     if (enabled !== "true") {
       return NextResponse.json({ error: `${cryptoType} trading is currently disabled` }, { status: 400 });
     }
 
-    // Check for duplicate idempotency key (prevents double-submit)
     const existing = await prisma.transaction.findUnique({
       where: { idempotencyKey },
     });
     if (existing) {
-      return NextResponse.json({ id: existing.id, success: true }, { status: 200 });
+      return NextResponse.json({ id: existing.id, duplicate: true });
     }
 
-    const tx = await prisma.transaction.create({
+    const transaction = await prisma.transaction.create({
       data: {
         userId: user.id,
         cryptoType,
@@ -89,11 +102,11 @@ export async function POST(req: NextRequest) {
     await createActivityEvent({
       eventType: "transaction_created",
       userId: user.id,
-      entityId: tx.id,
+      entityId: transaction.id,
       description: `New ${cryptoType} order for A$${audAmount}`,
     });
 
-    return NextResponse.json({ id: tx.id, success: true }, { status: 201 });
+    return NextResponse.json({ id: transaction.id }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

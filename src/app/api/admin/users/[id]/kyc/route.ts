@@ -1,3 +1,9 @@
+// ============================================================
+// FIX M2: src/app/api/admin/users/[id]/kyc/route.ts
+// PROBLEM: Admin can reject KYC without providing a reason
+// FIX: Require reason when status is REJECTED
+// ============================================================
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
@@ -15,11 +21,35 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  const { status, reason } = await req.json();
+
+  let body: { status?: string; reason?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const { status, reason } = body;
 
   const validStatuses = ["APPROVED", "REJECTED", "NEED_MORE_DOCS"];
-  if (!validStatuses.includes(status)) {
+  if (!status || !validStatuses.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  // FIX: Require reason when rejecting
+  if (status === "REJECTED" && (!reason || reason.trim().length === 0)) {
+    return NextResponse.json(
+      { error: "Rejection reason is required" },
+      { status: 400 }
+    );
+  }
+
+  // Validate reason length
+  if (reason && reason.length > 1000) {
+    return NextResponse.json(
+      { error: "Reason too long (max 1000 characters)" },
+      { status: 400 }
+    );
   }
 
   const user = await prisma.user.findUnique({ where: { id } });
@@ -29,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     where: { id },
     data: {
       kycStatus: status,
-      kycRejectionReason: status === "REJECTED" ? reason : null,
+      kycRejectionReason: status === "REJECTED" ? reason!.trim() : null,
     },
   });
 

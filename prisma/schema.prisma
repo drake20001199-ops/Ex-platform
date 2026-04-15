@@ -91,7 +91,7 @@ model KycDocument {
   uploadedAt   DateTime       @default(now()) @map("uploaded_at")
   status       DocumentStatus @default(PENDING)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@map("kyc_documents")
 }
@@ -118,7 +118,7 @@ model Transaction {
   settledAt         DateTime?         @map("settled_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([status])
   @@index([userId])
