@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import { CheckCircle } from "lucide-react";
 
 const rows = [
-  { label: "Account creation", value: "Free", highlight: true },
-  { label: "AUD deposit", value: "Free (bank transfer)", highlight: true },
-  { label: "Trading markup", value: "~3% on market rate", highlight: false },
-  { label: "Minimum order", value: "A$2,000", highlight: false },
-  { label: "Maximum order", value: "A$50,000", highlight: false },
-  { label: "Crypto withdrawal", value: "Sent to your wallet — no extra fee", highlight: true },
+  { label: "Account creation",    value: "Free",                           highlight: true  },
+  { label: "AUD deposit",         value: "Free (bank transfer)",           highlight: true  },
+  { label: "Trading markup",      value: "~3% on market rate",             highlight: false },
+  { label: "Minimum order",       value: "$2,000",                         highlight: false },
+  { label: "Maximum order",       value: "$50,000",                        highlight: false },
+  { label: "Crypto withdrawal",   value: "Sent to your wallet — no extra fee", highlight: true },
 ];
 
 export function Pricing() {

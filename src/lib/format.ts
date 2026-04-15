@@ -1,10 +1,12 @@
 export function formatAUD(amount: number | string): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (isNaN(num)) return "A$0.00";
-  return new Intl.NumberFormat("en-AU", {
+  if (isNaN(num)) return "$0.00";
+  const formatted = new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: "AUD",
   }).format(num);
+  // Remove the "A" prefix — show "$" instead of "A$"
+  return formatted.replace(/^A\$/, "$");
 }
 
 export function formatUSD(amount: number | string): string {

@@ -35,13 +35,13 @@ export function HeroDashboard({ btcPrice, ethPrice }: Props) {
         <motion.div variants={fadeUp} className="mt-5">
           <p className="text-xs text-muted-foreground">Portfolio Balance</p>
           <AnimatedCounter
-            value="A$24,832.50"
+            value="$24,832.50"
             className="mt-1 block text-3xl font-bold tracking-tight"
             immediate
           />
           <p className="mt-1 flex items-center gap-1 text-xs text-green-400">
             <TrendingUp className="h-3 w-3" />
-            <AnimatedCounter value="+A$1,247.30" className="" immediate />
+            <AnimatedCounter value="+$1,247.30" className="" immediate />
             <span>(5.28%) this month</span>
           </p>
         </motion.div>
@@ -51,10 +51,12 @@ export function HeroDashboard({ btcPrice, ethPrice }: Props) {
           <AssetCard symbol="Ξ" name="Ethereum" amount="1.8 ETH" value={ethPrice * 1.8} />
         </motion.div>
 
-        <motion.button variants={fadeUp}
+        <motion.button
+          variants={fadeUp}
           whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(37,99,235,0.3)" }}
           whileTap={{ scale: 0.98 }}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white transition hover:bg-blue-700">
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
           <Wallet className="h-4 w-4" /> Buy Bitcoin
         </motion.button>
 
@@ -62,9 +64,9 @@ export function HeroDashboard({ btcPrice, ethPrice }: Props) {
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             Recent Activity
           </p>
-          <ActivityRow action="Bought" detail="0.05 BTC" amount="A$7,750" time="2h ago" delay={0} />
+          <ActivityRow action="Bought" detail="0.05 BTC" amount="$7,750" time="2h ago" delay={0} />
           <ActivityRow action="KYC Verified" detail="" amount="" time="Today" verified delay={1} />
-          <ActivityRow action="Bought" detail="1.2 ETH" amount="A$6,240" time="Yesterday" delay={2} />
+          <ActivityRow action="Bought" detail="1.2 ETH" amount="$6,240" time="Yesterday" delay={2} />
         </motion.div>
       </motion.div>
     </div>
