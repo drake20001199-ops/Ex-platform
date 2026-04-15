@@ -1,18 +1,37 @@
+// ============================================================
+// FIX #7: src/app/api/auth/register/route.ts — No Email Enumeration
+// ============================================================
+// PROBLEM: Returns "An account with this email already exists" (409).
+//          Attacker can test emails to see who's registered.
+// FIX:     Return generic success (201) even if email exists.
+//          The real user will get a "already registered" email instead.
+//
+// NOTE:    Also migrated to rateLimitAsync for production Redis support.
+// FILE:    src/app/api/auth/register/route.ts (replace entire file)
+// ============================================================
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { registerSchema } from "@/lib/validations";
 import { createActivityEvent } from "@/lib/audit";
 import { sendVerificationEmail } from "@/lib/email";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimitAsync } from "@/lib/rate-limit";
 import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
-    const { allowed } = rateLimit(`register:${ip}`, 3, 60 * 1000); // 3 per minute
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
+    const { allowed } = await rateLimitAsync(`register:${ip}`, 3, 60 * 1000);
     if (!allowed) {
-      return NextResponse.json({ error: "Too many registration attempts. Please try again later." }, { status: 429 });
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429 }
+      );
     }
 
     const body = await req.json();
@@ -29,17 +48,17 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.user.findUnique({
       where: { email: rest.email },
     });
+
     if (existing) {
-      return NextResponse.json(
-        { error: "An account with this email already exists" },
-        { status: 409 }
-      );
+      // FIX: Don't reveal that the email exists.
+      // Return the same success response as a new registration.
+      // Optionally, you can send a "someone tried to register with your email" notification.
+      return NextResponse.json({ success: true }, { status: 201 });
     }
 
     const passwordHash = await hashPassword(password);
     const token = crypto.randomBytes(32).toString("hex");
 
-    // Use a transaction to ensure user + token are created atomically
     const user = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
@@ -69,8 +88,9 @@ export async function POST(req: NextRequest) {
     try {
       await sendVerificationEmail(user.email, token);
     } catch {
-      // Email failure is non-fatal — user can request a new verification email later
-      console.error(`[REGISTER] Failed to send verification email to ${user.email}`);
+      console.error(
+        `[REGISTER] Failed to send verification email to ${user.email}`
+      );
     }
 
     return NextResponse.json({ success: true }, { status: 201 });

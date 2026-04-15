@@ -69,6 +69,7 @@ model User {
   kycProviderRef     String?   @map("kyc_provider_ref")
   kycRejectionReason String?   @map("kyc_rejection_reason")
   role               Role      @default(CUSTOMER)
+  passwordVersion    Int       @default(0) @map("password_version")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
