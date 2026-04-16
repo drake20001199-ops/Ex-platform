@@ -6,11 +6,29 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Bitcoin, TrendingUp, TrendingDown } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
-import { formatAUD, formatUSD } from "@/lib/format";
+import { formatAUD, formatAUDShort, formatUSD } from "@/lib/format";
 import { validateWalletAddress } from "@/lib/validations";
 import Link from "next/link";
+
+// ── Proper crypto symbols ─────────────────────────────────────
+// ₿ = Unicode Bitcoin sign (U+20BF)
+// Ξ = Greek capital Xi, used as Ethereum symbol
+function CryptoSymbol({ type }: { type: "BTC" | "ETH" }) {
+  if (type === "BTC") {
+    return (
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500/15 text-sm font-bold text-orange-400">
+        ₿
+      </span>
+    );
+  }
+  return (
+    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/15 text-sm font-bold text-indigo-400">
+      Ξ
+    </span>
+  );
+}
 
 export default function BuyCryptoPage() {
   const router = useRouter();
@@ -37,7 +55,7 @@ export default function BuyCryptoPage() {
   const current = form.cryptoType === "BTC" ? prices.btc : prices.eth;
   const indicativeRate = current.aud;
   const amount = parseFloat(form.audAmount) || 0;
-  const markupMultiplier = 1.03; // TODO: fetch from /api/admin/settings for dynamic markup
+  const markupMultiplier = 1.03;
   const estimated = indicativeRate > 0 && amount > 0 ? amount / (indicativeRate * markupMultiplier) : 0;
 
   async function onSubmit(e: React.FormEvent) {
@@ -82,7 +100,7 @@ export default function BuyCryptoPage() {
             <Card key={coin} className="border-white/10 bg-white/5">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <Bitcoin className="h-4 w-4 text-blue-400" />
+                  <CryptoSymbol type={coin} />
                   <span className="text-sm font-medium">{coin === "BTC" ? "Bitcoin" : "Ethereum"}</span>
                   {pricesLoaded && (
                     <span className={`ml-auto flex items-center gap-0.5 text-xs font-medium ${up ? "text-green-400" : "text-red-400"}`}>
@@ -93,8 +111,10 @@ export default function BuyCryptoPage() {
                 </div>
                 {pricesLoaded ? (
                   <>
-                    <p className="mt-2 text-lg font-bold">{formatUSD(p.usd)}</p>
-                    <p className="text-xs text-muted-foreground">{formatAUD(p.aud)} AUD</p>
+                    {/* Primary price — AUD (already includes "AUD" suffix from formatAUD) */}
+                    <p className="mt-2 text-lg font-bold">{formatAUD(p.aud)}</p>
+                    {/* Secondary price — USD reference */}
+                    <p className="text-xs text-muted-foreground">{formatUSD(p.usd)} USD</p>
                   </>
                 ) : (
                   <>
@@ -126,7 +146,8 @@ export default function BuyCryptoPage() {
                         ? "border-blue-500 bg-blue-500/10 text-blue-400"
                         : "border-white/10 hover:border-white/20"
                     }`}>
-                    <Bitcoin className="h-4 w-4" />{c === "BTC" ? "Bitcoin" : "Ethereum"}
+                    <CryptoSymbol type={c} />
+                    {c === "BTC" ? "Bitcoin" : "Ethereum"}
                   </button>
                 ))}
               </div>
@@ -140,8 +161,15 @@ export default function BuyCryptoPage() {
 
             {amount > 0 && (
               <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Indicative Rate</span><span>{formatAUD(indicativeRate * markupMultiplier)}/{form.cryptoType}</span></div>
-                <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Estimated Receive</span><span className="font-medium text-blue-400">~{estimated.toFixed(8)} {form.cryptoType}</span></div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Indicative Rate</span>
+                  {/* Use Short version — context ("per BTC") makes AUD obvious */}
+                  <span>{formatAUDShort(indicativeRate * markupMultiplier)} / {form.cryptoType}</span>
+                </div>
+                <div className="mt-1 flex justify-between">
+                  <span className="text-muted-foreground">Estimated Receive</span>
+                  <span className="font-medium text-blue-400">~{estimated.toFixed(8)} {form.cryptoType}</span>
+                </div>
                 <p className="mt-2 text-xs text-muted-foreground">Final rate determined at settlement. This is not binding.</p>
               </div>
             )}

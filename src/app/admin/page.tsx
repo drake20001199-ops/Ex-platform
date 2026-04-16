@@ -2,7 +2,7 @@ import { Users, ShieldCheck, ArrowLeftRight, CheckCircle, DollarSign, Bitcoin, T
 import { StatsGrid } from "@/components/admin/StatsCards";
 import { QuickActions } from "@/components/admin/QuickActions";
 import { ActivityFeed } from "@/components/admin/ActivityFeed";
-import { formatAUD } from "@/lib/format";
+import { formatAUDShort } from "@/lib/format";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getPrices } from "@/lib/crypto-price";
@@ -30,15 +30,16 @@ export default async function AdminDashboard() {
 
   const totalVolume = Number(volumeAgg._sum.audAmount ?? 0);
 
+  // Note: titles already say "(AUD)" so we use formatAUDShort to avoid duplicate "AUD"
   const stats = [
     { title: "Total Users", value: totalUsers, icon: Users },
     { title: "Verified Users", value: verifiedUsers, icon: ShieldCheck },
     { title: "Pending KYC", value: pendingKyc, icon: ShieldCheck, description: "Awaiting review" },
     { title: "Active Transactions", value: activeTxns, icon: ArrowLeftRight },
     { title: "Completed Today", value: completedToday, icon: CheckCircle },
-    { title: "Total Volume (AUD)", value: formatAUD(totalVolume), icon: DollarSign },
-    { title: "BTC Rate (AUD)", value: formatAUD(prices.btc.aud), icon: Bitcoin },
-    { title: "ETH Rate (AUD)", value: formatAUD(prices.eth.aud), icon: TrendingUp },
+    { title: "Total Volume (AUD)", value: formatAUDShort(totalVolume), icon: DollarSign },
+    { title: "BTC Rate (AUD)", value: formatAUDShort(prices.btc.aud), icon: Bitcoin },
+    { title: "ETH Rate (AUD)", value: formatAUDShort(prices.eth.aud), icon: TrendingUp },
   ];
 
   const events = recentEvents.map((e) => ({
