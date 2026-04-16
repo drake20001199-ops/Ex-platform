@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { CheckCircle, TrendingUp, ArrowUpRight, Wallet } from "lucide-react";
 import { AnimatedCounter } from "./AnimatedCounter";
 import { formatAUD } from "@/lib/format";
@@ -8,12 +9,24 @@ import { formatAUD } from "@/lib/format";
 interface Props {
   btcPrice: number;
   ethPrice: number;
+  user?: { role: string } | null;
 }
 
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.1, delayChildren: 0.4 } } };
 const fadeUp = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0, 0, 0.2, 1] as const } } };
 
-export function HeroDashboard({ btcPrice, ethPrice }: Props) {
+export function HeroDashboard({ btcPrice, ethPrice, user }: Props) {
+  // If user is logged in as a customer → go to buy page
+  // If user is admin → go to admin dashboard (admins don't buy)
+  // If not logged in → go to register
+  const buyHref = !user
+    ? "/register"
+    : user.role === "ADMIN"
+    ? "/admin"
+    : "/dashboard/buy";
+
+  const buyLabel = user?.role === "ADMIN" ? "Go to Admin" : "Buy Bitcoin";
+
   return (
     <div className="relative">
       <div className="absolute -inset-4 animate-pulse rounded-3xl bg-blue-500/[0.06] blur-2xl [animation-duration:4s]" />
@@ -51,14 +64,17 @@ export function HeroDashboard({ btcPrice, ethPrice }: Props) {
           <AssetCard symbol="Ξ" name="Ethereum" amount="1.8 ETH" value={ethPrice * 1.8} />
         </motion.div>
 
-        <motion.button
-          variants={fadeUp}
-          whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(37,99,235,0.3)" }}
-          whileTap={{ scale: 0.98 }}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          <Wallet className="h-4 w-4" /> Buy Bitcoin
-        </motion.button>
+        {/* FIX: Wrap button in Link — dynamic destination based on auth status */}
+        <Link href={buyHref}>
+          <motion.div
+            variants={fadeUp}
+            whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(37,99,235,0.3)" }}
+            whileTap={{ scale: 0.98 }}
+            className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            <Wallet className="h-4 w-4" /> {buyLabel}
+          </motion.div>
+        </Link>
 
         <motion.div variants={fadeUp} className="mt-4 space-y-2">
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

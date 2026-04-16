@@ -16,6 +16,9 @@ export default async function HomePage() {
     getCurrentUser(),
   ]);
 
+  // Extract only what client components need (role for routing decisions)
+  const userForClient = user ? { role: user.role } : null;
+
   return (
     <main className="relative">
       <Navbar
@@ -26,6 +29,7 @@ export default async function HomePage() {
         ethPrice={prices.eth.aud}
         btcChange={prices.btc.change24h}
         ethChange={prices.eth.change24h}
+        user={userForClient}
       />
       <SocialProof />
       <HowItWorks />

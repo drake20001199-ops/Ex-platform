@@ -12,6 +12,7 @@ interface Props {
   ethPrice: number;
   btcChange: number;
   ethChange: number;
+  user?: { role: string } | null;
 }
 
 const trustItems = [
@@ -20,27 +21,40 @@ const trustItems = [
   "Bank‑Grade Security",
 ];
 
-export function HeroSection({ btcPrice, ethPrice, btcChange, ethChange }: Props) {
+export function HeroSection({ btcPrice, ethPrice, btcChange, ethChange, user }: Props) {
   return (
     <section className="relative overflow-hidden px-4 pb-16 pt-28 sm:pt-32 lg:pb-24 lg:pt-20 lg:min-h-[92vh] lg:flex lg:items-center">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(59,130,246,0.12),transparent)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_600px_at_80%_50%,rgba(59,130,246,0.06),transparent)]" />
 
       <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-12 lg:grid-cols-2 lg:gap-16">
-        <LeftCopy btcPrice={btcPrice} ethPrice={ethPrice} btcChange={btcChange} ethChange={ethChange} />
+        <LeftCopy btcPrice={btcPrice} ethPrice={ethPrice} btcChange={btcChange} ethChange={ethChange} user={user} />
 
         {/* Right — Dashboard mockup (desktop only) */}
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
           className="hidden lg:flex lg:items-center lg:justify-center">
-          <HeroDashboard btcPrice={btcPrice} ethPrice={ethPrice} />
+          <HeroDashboard btcPrice={btcPrice} ethPrice={ethPrice} user={user} />
         </motion.div>
       </div>
     </section>
   );
 }
 
-function LeftCopy({ btcPrice, ethPrice, btcChange, ethChange }: Props) {
+function LeftCopy({ btcPrice, ethPrice, btcChange, ethChange, user }: Props) {
+  // Dynamic CTA based on auth status
+  const ctaHref = !user
+    ? "/register"
+    : user.role === "ADMIN"
+    ? "/admin"
+    : "/dashboard/buy";
+
+  const ctaLabel = !user
+    ? "Create Free Account"
+    : user.role === "ADMIN"
+    ? "Go to Admin Panel"
+    : "Buy Crypto Now";
+
   return (
     <div className="flex flex-col justify-center">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -62,23 +76,25 @@ function LeftCopy({ btcPrice, ethPrice, btcChange, ethChange }: Props) {
         From sign‑up to verified in under 10 minutes — no experience needed.
       </motion.p>
 
-      {/* CTA — dominant */}
+      {/* CTA — dominant, dynamic based on auth */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         className="mt-10">
-        <Link href="/register">
+        <Link href={ctaHref}>
           <motion.div
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             className="inline-block"
           >
             <Button size="lg" className="h-14 gap-2 bg-blue-600 px-10 text-base font-semibold shadow-lg shadow-blue-600/25 transition-shadow duration-300 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/40 sm:text-lg">
-              Create Free Account <ArrowRight className="h-5 w-5" />
+              {ctaLabel} <ArrowRight className="h-5 w-5" />
             </Button>
           </motion.div>
         </Link>
-        <p className="mt-3 text-xs text-muted-foreground">
-          No fees until you deposit&ensp;·&ensp;Cancel anytime&ensp;·&ensp;ID verification later
-        </p>
+        {!user && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            No fees until you deposit&ensp;·&ensp;Cancel anytime&ensp;·&ensp;ID verification later
+          </p>
+        )}
       </motion.div>
 
       {/* Trust badges */}
